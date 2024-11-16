@@ -1,12 +1,12 @@
 import { Heart } from 'lucide-react';
 import styles from './PostFeed.module.css';
 
-const PostFeed = (posts) => {
-  console.log(posts && posts.posts)
+const PostFeed = (props) => {
+  console.log(props);
   return (
     <div className={styles.container}>
       <div className={styles.feedList}>
-        {posts && posts.posts.map(post => (
+        { props.posts && props.posts.map(post => (
           <div key={post.id} className={styles.postCard}>
             <div className={styles.postHeader}>
               <div className={styles.profile}>
@@ -23,8 +23,9 @@ const PostFeed = (posts) => {
               </div>
             </div>
             <p className={styles.postContent}>{post.content}</p>
-            <button className={styles.likeButton}>
-              <Heart size={16} />
+            <button onClick={() => props.onUpdateLike(post.id)}
+                className={`${styles.likeButton} ${post.isLiked ? styles.liked : ''}`}>
+              <Heart size={16} className={post.isLiked ? styles.likedIcon : ''} />
               <span>{post.likes}</span>
             </button>
           </div>

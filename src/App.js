@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import PostCreator from './components/PostCreator';
 import PostFeed from './components/PostFeed';
 
@@ -38,7 +38,7 @@ const samplePosts = [
 function App() {
   const [posts, setPosts] = useState(samplePosts);
 
-  const addPost = (content) => {
+  const hanldelAddPost = (content) => {
     const newPost = {
       id: samplePosts.length + 1,
       user: {
@@ -54,11 +54,24 @@ function App() {
     console.log(content); 
   };
 
+  const handleUpdateLike = useCallback((postId) => {
+    setPosts(posts => posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+          isLiked: !post.isLiked
+        };
+      }
+      return post;
+    }));
+  }, []); 
+
   return (
     <div>
-      <PostCreator onAddPost={addPost}/>
+      <PostCreator onAddPost={hanldelAddPost}/>
       <div className="bg-gray-50 min-h-screen">
-        <PostFeed posts={posts} />
+        <PostFeed posts={posts} onUpdateLike={handleUpdateLike} />
       </div>
     </div>
   );
