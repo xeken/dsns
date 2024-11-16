@@ -1,25 +1,66 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import PostCreator from './components/PostCreator';
+import PostFeed from './components/PostFeed';
+
+const samplePosts = [
+  {
+    id: 1,
+    user: {
+      name: "조병현",
+      profile_img: "default_profile.png"
+    },
+    content: "언론·출판은 타인의 명예나 권리 또는 공중도덕이나 사회윤리를 침해하여서는 아니된다. 언론·출판이 타인의 명예나 권리를 침해한 때에는 피해자는 이에 대한 피해의 배상을 청구할 수 있다.",
+    timestamp: "2024-11-14T10:30:00",
+    likes: 12
+  },
+  {
+    id: 2,
+    user: {
+      name: "조용수",
+      profile_img: "default_profile.png"
+    },
+    content: "법률은 특별한 규정이 없는 한 공포한 날로부터 20일을 경과함으로써 효력을 발생한다. 국회의원이 회기전에 체포 또는 구금된 때에는 현행범인이 아닌 한 국회의 요구가 있으면 회기중 석방된다.",
+    timestamp: "2024-11-14T09:15:00",
+    likes: 8
+  },
+  {
+    id: 3,
+    user: {
+      name: "오문성",
+      profile_img: "default_profile.png"
+    },
+    content: "중앙선거관리위원회는 법령의 범위안에서 선거관리·국민투표관리 또는 정당사무에 관한 규칙을 제정할 수 있으며, 법률에 저촉되지 아니하는 범위안에서 내부규율에 관한 규칙을 제정할 수 있다.",
+    timestamp: "2024-11-14T08:45:00",
+    likes: 15
+  }
+];
 
 function App() {
+  const [posts, setPosts] = useState(samplePosts);
+
+  const addPost = (content) => {
+    const newPost = {
+      id: samplePosts.length + 1,
+      user: {
+        name: "조병현",
+        profile_img: "default_profile.png"
+      },
+      content,
+      timestamp: new Date().toISOString(),
+      likes: 0
+    };
+
+    setPosts([newPost, ...posts]);
+    console.log(content); 
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <PostCreator onAddPost={addPost}/>
+      <div className="bg-gray-50 min-h-screen">
+        <PostFeed posts={posts} />
+      </div>
     </div>
   );
 }
-
 export default App;
