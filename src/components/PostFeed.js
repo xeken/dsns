@@ -2,7 +2,6 @@ import { Heart } from 'lucide-react';
 import styles from './PostFeed.module.css';
 
 const PostFeed = (props) => {
-  console.log(props);
   return (
     <div className={styles.container}>
       <div className={styles.feedList}>
