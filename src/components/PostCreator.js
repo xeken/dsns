@@ -15,7 +15,6 @@ const PostCreator = (props) => {
       setIsExpanded(false);
     }
   };
-
   const handleContentChange = (e) => {
     setContent(e.target.value);
   };

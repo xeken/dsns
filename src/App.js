@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect} from 'react';
-import { getWeb3Provider, getContract } from './utils/Web3';
+import { getWeb3Provider, getContract, getUserInfo } from './utils/Web3';
 import PostCreator from './components/PostCreator';
 import PostFeed from './components/PostFeed';
 
@@ -39,51 +39,28 @@ const samplePosts = [
 function App() {
   const [provider, setProvider] = useState(null);
   const [contract, setContract] = useState(null);
+  const [user, setUser] = useState(null);
   const [posts, setPosts] = useState(samplePosts);
 
   useEffect(() => {
-    initWeb3(); 
+    init(); 
   }, []);
 
-  const initWeb3 = async () => {
+  const init = async () => {
     try {
         const provider = await getWeb3Provider();
         const contract = await getContract(provider);
         setProvider(provider);
         setContract(contract);
-    } catch (error) {
+        // const address = (await provider.getSigner()).address;
+        // setUserAddress(address);
+        const profile =  await getUserInfo(provider);
+        setUser(profile);
+        console.log(profile);
+      } catch (error) {
         console.error("Web3 초기화 실패:", error);
     }
 };
-
-  // const handleAddPost = (content) => {
-  //   const newPost = {
-  //     id: samplePosts.length + 1,
-  //     user: {
-  //       name: "조병현",
-  //       profile_img: "default_profile.png"
-  //     },
-  //     content,
-  //     timestamp: new Date().toISOString(),
-  //     likes: 0
-  //   };
-
-  //   setPosts([newPost, ...posts]);
-  //   console.log(content); 
-  // };
-
-  // const handleUpdateLike = useCallback((postId) => {
-  //   setPosts(posts => posts.map(post => {
-  //     if (post.id === postId) {
-  //       return {
-  //         ...post,
-  //         likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-  //         isLiked: !post.isLiked
-  //       };
-  //     }
-  //     return post;
-  //   }));
-  // }, []); 
 
   const handleAddPost = async (content) => {
     try {
@@ -139,7 +116,7 @@ function App() {
 
   return (
     <div>
-      <PostCreator onAddPost={handleAddPost}/>
+      <PostCreator userInfo={user} onAddPost={handleAddPost}/>
       <div className="bg-gray-50 min-h-screen">
         <PostFeed posts={posts} onUpdateLike={handleUpdateLike} />
       </div>
