@@ -1,46 +1,33 @@
-import React, { useCallback, useState, useEffect} from 'react';
+import React, { useState, useEffect} from 'react';
+import swal from 'sweetalert';
 import { getWeb3Provider, getContract, getUserInfo } from './utils/Web3';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import PostCreator from './components/PostCreator';
 import PostFeed from './components/PostFeed';
+const ethers = require("ethers") 
 
-const samplePosts = [
-  {
-    id: 1,
-    user: {
-      name: "조병현",
-      profile_img: "default_profile.png"
-    },
-    content: "언론·출판은 타인의 명예나 권리 또는 공중도덕이나 사회윤리를 침해하여서는 아니된다. 언론·출판이 타인의 명예나 권리를 침해한 때에는 피해자는 이에 대한 피해의 배상을 청구할 수 있다.",
-    timestamp: "2024-11-14T10:30:00",
-    likes: 12
-  },
-  {
-    id: 2,
-    user: {
-      name: "조용수",
-      profile_img: "default_profile.png"
-    },
-    content: "법률은 특별한 규정이 없는 한 공포한 날로부터 20일을 경과함으로써 효력을 발생한다. 국회의원이 회기전에 체포 또는 구금된 때에는 현행범인이 아닌 한 국회의 요구가 있으면 회기중 석방된다.",
-    timestamp: "2024-11-14T09:15:00",
-    likes: 8
-  },
-  {
-    id: 3,
-    user: {
-      name: "오문성",
-      profile_img: "default_profile.png"
-    },
-    content: "중앙선거관리위원회는 법령의 범위안에서 선거관리·국민투표관리 또는 정당사무에 관한 규칙을 제정할 수 있으며, 법률에 저촉되지 아니하는 범위안에서 내부규율에 관한 규칙을 제정할 수 있다.",
-    timestamp: "2024-11-14T08:45:00",
-    likes: 15
-  }
-];
+// const samplePosts = [
+//   {
+//     pId: 2,
+//     author: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+//     content: "제3조(국외행위에 대한 적용) 이 법은 국외에서 이루어진 행위로서 그 효과가 국내에 미치는 경우에도 적용한다.",
+//     timestamp: 1733025477,
+//     likes: 8
+//   },
+//   {
+//     pId: 1,
+//     author: "0xfBf0243e88145db92242A20F3CAa8e4a49A08161",
+//     content: "제1조(목적) 이 법은 가상자산 이용자 자산의 보호와 불공정거래행위 규제 등에 관한 사항을 정함으로써 가상자산 이용자의 권익을 보호하고 가상자산시장의 투명하고 건전한 거래질서를 확립하는 것을 목적으로 한다.",
+//     timestamp: 1733015477,
+//     likes: 12
+//   }
+// ];
 
 function App() {
-  const [provider, setProvider] = useState(null);
   const [contract, setContract] = useState(null);
-  const [user, setUser] = useState(null);
-  const [posts, setPosts] = useState(samplePosts);
+  const [userInfo, setUserInfo] = useState(null);
+  const [posts, setPosts] = useState([]);
 
   useEffect(() => {
     init(); 
@@ -48,19 +35,56 @@ function App() {
 
   const init = async () => {
     try {
-        const provider = await getWeb3Provider();
-        const contract = await getContract(provider);
-        setProvider(provider);
-        setContract(contract);
-        // const address = (await provider.getSigner()).address;
-        // setUserAddress(address);
-        const profile =  await getUserInfo(provider);
-        setUser(profile);
-        console.log(profile);
-      } catch (error) {
-        console.error("Web3 초기화 실패:", error);
+      const provider = await getWeb3Provider();
+      const contract = await getContract(provider);
+      const user = await getUserInfo(provider);
+
+      setContract(contract);
+      setUserInfo(user);
+
+      const count = ethers.toNumber(await contract.postCount());
+      const loadedPosts = [];
+      for(let i = count; i > 0; i--){ 
+        const post = await contract.posts(i);
+        const pId = ethers.toNumber(post.pId);
+        if(pId === 0x0000000000000000000000000000000000000000)
+          continue;
+
+        const isLiked = await contract.userLikes(i, user.address);
+
+        loadedPosts.push({
+          pId: pId,
+          author: ethers.getAddress(post.author),
+          content: post.content,
+          timestamp: ethers.toNumber(post.timestamp),
+          likes: ethers.toNumber(post.likes),
+          isLiked: isLiked,
+          isMyPost: post.author.toLowerCase() === user.address.toLowerCase()
+        });
+      }
+      setPosts(loadedPosts);
+     
+      // for(let i = count; i > 2; i--){ ///@TODO 샘플데이터 삭제 후 0으로
+      //   const post = await contract.posts(i);
+      //   const newPost = {
+      //     pId: ethers.toNumber(post.pId),
+      //     author: ethers.getAddress(post.author),
+      //     content: post.content,
+      //     timestamp: ethers.toNumber(post.timestamp),
+      //     likes: post.likes,
+      //   };
+      //   setPosts([newPost, ...posts]);
+      // }
+    } catch (error) {
+      swal({
+        title: "ERROR",
+        text: "메타마스크 지갑정보를 확인해주세요!",
+        icon: "error",
+        button: "확인",
+      });
+      console.error(error);
     }
-};
+  };
 
   const handleAddPost = async (content) => {
     try {
@@ -68,58 +92,129 @@ function App() {
         console.error("Contract not initialized");
         return;
       }
- 
-      const tx = await contract.createPost(content);
-      await tx.wait();
       
+      const toastId = toast.loading("트랜잭션 처리 중...");
+
+      const tx = await contract.createPost(content);
+      const receipt = await tx.wait();
+
+      console.log(receipt);
+      
+      if (receipt.status !== 1) 
+        throw new Error("tx error");
+      
+      const count = ethers.toNumber(await contract.postCount());
+
       const newPost = {
-        id: posts.length + 1,
-        user: {
-          name: "현재 사용자",
-          avatar: "/resources/image/default_profile.png"
-        },
+        pId: ethers.toNumber(count) + 1,
+        //pId: posts.length === 0 ? 0 : posts.at(-1).pId + 1,
+        author: userInfo.address,
         content,
-        timestamp: new Date().toISOString(),
-        likes: 0
+        timestamp: Math.floor(new Date().getTime() / 1000),
+        likes: 0,
+        isMyPost: true
       };
  
       setPosts([newPost, ...posts]);
+      
+      toast.update(toastId, {
+        render: "게시글이 작성되었습니다",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
+
     } catch (error) {
-      console.error("게시글 작성 실패:", error);
+      swal({
+        title: "게시글 작성 실패",
+        text: "메타마스크를 확인해주세요!",
+        icon: "warning",
+        button: "확인",
+      });
+      console.log(error);
     }
   };
+
   const handleUpdateLike = async (postId) => {
     try {
       if (!contract) {
         console.error("Contract not initialized");
         return;
       }
- 
-      const tx = await contract.toggleLike(postId);
-      await tx.wait();
+
+      const toastId = toast.loading("트랜잭션 처리 중...");
       
-      setPosts(posts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            likes: post.likes + (post.isLiked ? -1 : 1),
-            isLiked: !post.isLiked
-          };
-        }
-        return post;
-      }));
+      console.log(postId);
+      const tx = await contract.toggleLike(postId);
+
+      const receipt = await tx.wait();
+      console.log(receipt);
+
+      if (receipt.status !== 1) 
+        throw new Error("tx error");
+
+      init();
+
+      toast.update(toastId, {
+        render: "좋아요 처리가 완료되었습니다.",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
     } catch (error) {
-      console.error("좋아요 토글 실패:", error);
+      swal({
+        title: "좋아요 실패",
+        text: "메타마스크를 확인해주세요!",
+        icon: "error",
+        button: "확인",
+      });
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    try {
+      if (!contract) {
+        console.error("Contract not initialized");
+        return;
+      }
+      const toastId = toast.loading("트랜잭션 처리 중...");
+      
+      const tx = await contract.deletePost(postId);
 
+      const receipt = await tx.wait();
+      console.log(receipt);
+
+      if (receipt.status !== 1) 
+        throw new Error("tx error");
+
+      init();
+
+      toast.update(toastId, {
+        render: "게시글 삭제가 완료되었습니다.",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
+
+    } catch (error) {
+      swal({
+        title: "삭제 실패",
+        text: "메타마스크를 확인해주세요!",
+        icon: "error",
+        button: "확인",
+      });
+    }
+  }
   return (
     <div>
-      <PostCreator userInfo={user} onAddPost={handleAddPost}/>
+      <PostCreator userInfo={userInfo} onAddPost={handleAddPost}/>
       <div className="bg-gray-50 min-h-screen">
-        <PostFeed posts={posts} onUpdateLike={handleUpdateLike} />
+        <PostFeed posts={posts} onUpdateLike={handleUpdateLike} onDeletePost={handleDeletePost}/>
       </div>
+      <ToastContainer 
+        position="bottom-right"
+        autoClose={5000}
+      />
     </div>
   );
 }

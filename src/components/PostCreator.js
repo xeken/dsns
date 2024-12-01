@@ -1,10 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './PostCreator.module.css';
+import { createJazzicon } from '../utils/Web3';
 
 const PostCreator = (props) => {
   const [content, setContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef(null);
+  const avatarRef = useRef(null); 
+
+  useEffect(() => {
+    if (props.userInfo && props.userInfo.address) {
+      if (avatarRef.current) {
+        while (avatarRef.current.firstChild) 
+          avatarRef.current.removeChild(avatarRef.current.firstChild);
+        avatarRef.current.appendChild(createJazzicon(props.userInfo.address));
+      }
+    }
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,19 +42,16 @@ const PostCreator = (props) => {
       textareaRef.current?.focus();
     }
   };
-
+          
   return (
     <div className={styles.container}>
       <div className={styles.card}>
         <form onSubmit={handleSubmit}>
           <div className={styles.flexRow}>
-            <div className={styles.avatar}>
-              <img 
-                src="default_profile.png" 
-                alt="User" 
-                className={styles.avatarImg} />
-            </div>
-            
+            <div className={styles.avatar} 
+                ref={avatarRef} 
+                // title={props.userInfo.balance + ' ETH'}
+              />
             <div className={styles.inputWrapper}>
               <div
                 className={`${styles.textareaWrapper} 

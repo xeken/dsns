@@ -4,7 +4,7 @@
   padding: 1rem;
 }
 
-.profile {
+.avatar {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 9999px;
@@ -37,6 +37,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  position: relative;
 }
 
 .userInfo {
@@ -81,4 +82,21 @@
 
 .likedIcon {
   fill: currentColor;
+}
+
+.deleteButton {
+  position: absolute;  /* 추가 */
+  right: 0;           /* 추가 */
+  top: 0;            /* 추가 */
+  color: #9ca3af;
+  font-size: 0.75rem;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.deleteButton:hover {
+  color: #5b6270;
 }
